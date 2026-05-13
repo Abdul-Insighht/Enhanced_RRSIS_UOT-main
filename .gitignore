@@ -1,0 +1,18 @@
+# Pre-trained weights (Prevent 3GB upload to GitHub)
+pre-trained-weights/
+*.pt
+*.pth
+
+# Python caches
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Output directories
+output/
+final_outputs/
+*.log
+
+# Kaggle / Environment
+environment.yml
+venv/

@@ -1,0 +1,60 @@
+# Enhanced_RRSIS_UOT Training Configuration
+# Extends RRSIS_SAM3 with 4 novel techniques
+
+# ====== Model ======
+image_size: 504          # Divisible by 14 (SAM3 ViT patch_size)
+lora_rank: 16            # LoRA rank for backbone adaptation
+lora_alpha: 32.0         # LoRA scaling factor
+freeze_backbone: true    # Freeze ViT backbone
+freeze_text_encoder: true # Freeze text encoder
+
+# ====== Enhancement Flags ======
+use_dynamic_lora: true        # Text-Guided Dynamic LoRA
+use_contrastive_loss: true    # InfoNCE Contrastive Loss
+use_multiscale_ot: true       # Multi-Scale OT Feature Alignment
+use_ohem_loss: true           # OHEM + FocalDice + Boundary Loss
+
+# ====== Enhancement Parameters ======
+contrastive_weight: 0.1       # Weight for contrastive loss
+ohem_hard_ratio: 0.3          # Fraction of hardest pixels for OHEM
+ot_reg: 0.1                   # Sinkhorn entropy regularization
+ot_num_iter: 10               # Sinkhorn iterations
+num_ot_scales: 3              # FPN scales for multi-scale OT
+boundary_loss_weight: 0.5     # Boundary-aware loss weight
+focal_gamma: 2.0              # Focal loss focusing parameter
+
+# ====== Training ======
+epochs: 40
+batch_size: 2            # Per GPU (Kaggle 16GB compatible)
+grad_accum_steps: 4      # Effective batch = 2 * 4 = 8
+lr: 5e-5                 # Base learning rate
+lr_backbone: 1e-5        # LoRA adapter learning rate
+lr_decoder: 5e-5         # Decoder/seg head/enhancement learning rate
+weight_decay: 0.01
+warmup_epochs: 5
+max_tokens: 32           # SAM3 text tokenizer max length
+
+# ====== Loss ======
+dice_weight: 0.5
+ce_weight: 0.5
+boundary_weight: 0.2
+
+# ====== Optimization ======
+fp16: true               # Mixed precision for Kaggle 16GB
+gradient_checkpointing: true
+seed: 42
+
+# ====== Dataset Specific Notes ======
+# RRSIS-D:   12181 train → ~1523 steps/epoch (bs=8) → 60,920 total steps
+# RRSIS-HR:  2118 train  → ~265 steps/epoch (bs=8)  → 10,600 total steps
+# RefSegRS:  2172 train  → ~272 steps/epoch (bs=8)  → 10,880 total steps
+
+# ====== Ablation Guide ======
+# To run baseline (RRSIS_SAM3 equivalent):
+#   --no_dynamic_lora --no_contrastive_loss --no_multiscale_ot --no_ohem_loss
+#
+# To test individual techniques:
+#   Dynamic LoRA only:     --no_contrastive_loss --no_multiscale_ot --no_ohem_loss
+#   Contrastive only:      --no_dynamic_lora --no_multiscale_ot --no_ohem_loss
+#   Multi-Scale OT only:   --no_dynamic_lora --no_contrastive_loss --no_ohem_loss
+#   OHEM only:             --no_dynamic_lora --no_contrastive_loss --no_multiscale_ot

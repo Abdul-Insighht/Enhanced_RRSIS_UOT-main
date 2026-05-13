@@ -1,0 +1,35 @@
+# RRSIS_SAM3 Training Configuration
+# All 3 datasets use the same hyperparameters
+
+# ====== Model ======
+image_size: 504          # Divisible by 14 (SAM3 ViT patch_size)
+lora_rank: 16            # LoRA rank for backbone adaptation
+lora_alpha: 32.0         # LoRA scaling factor
+freeze_backbone: true    # Freeze ViT backbone (train only LoRA)
+freeze_text_encoder: true # Freeze text encoder
+
+# ====== Training ======
+epochs: 40
+batch_size: 2            # Per GPU (Kaggle 16GB compatible)
+grad_accum_steps: 4      # Effective batch = 2 * 4 = 8
+lr: 5e-5                 # Base learning rate
+lr_backbone: 1e-5        # LoRA adapter learning rate
+lr_decoder: 5e-5         # Decoder/seg head learning rate
+weight_decay: 0.01
+warmup_epochs: 5
+max_tokens: 32           # SAM3 text tokenizer max length
+
+# ====== Loss ======
+dice_weight: 0.5
+ce_weight: 0.5
+boundary_weight: 0.2
+
+# ====== Optimization ======
+fp16: true               # Mixed precision for Kaggle 16GB
+gradient_checkpointing: true
+seed: 42
+
+# ====== Dataset Specific Notes ======
+# RRSIS-D:   12181 train → ~1523 steps/epoch (bs=8) → 60,920 total steps
+# RRSIS-HR:  2118 train  → ~265 steps/epoch (bs=8)  → 10,600 total steps
+# RefSegRS:  2172 train  → ~272 steps/epoch (bs=8)  → 10,880 total steps
