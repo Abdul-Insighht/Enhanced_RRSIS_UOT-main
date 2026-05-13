@@ -290,6 +290,7 @@ def main():
         ot_reg=args.ot_reg,
         ot_num_iter=args.ot_num_iter,
         num_ot_scales=args.num_ot_scales,
+        use_pipeline_b=args.use_pipeline_b,
     )
     model = model.to(device)
 

@@ -54,6 +54,10 @@ def get_parser():
                         help='Enable OHEM + Focal + Boundary loss')
     parser.add_argument('--no_ohem_loss', action='store_true', default=False,
                         help='Disable OHEM loss (use standard Dice+BCE)')
+    parser.add_argument('--use_pipeline_b', action='store_true', default=True,
+                        help='Enable Pipeline B (Semantic Prompter)')
+    parser.add_argument('--no_pipeline_b', action='store_true', default=False,
+                        help='Disable Pipeline B')
 
     # ====== Enhancement Parameters (NEW) ======
     parser.add_argument('--contrastive_weight', type=float, default=0.1,
@@ -137,5 +141,7 @@ def get_args():
         args.use_multiscale_ot = False
     if args.no_ohem_loss:
         args.use_ohem_loss = False
+    if args.no_pipeline_b:
+        args.use_pipeline_b = False
 
     return args
