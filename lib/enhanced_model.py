@@ -462,6 +462,9 @@ class Enhanced_RRSIS_UOT(nn.Module):
                                 vis_spatial, text_feats,
                                 result['pred_masks'], masks_gt
                             )
+                            # Synchronize to catch any asynchronous CUDA errors immediately
+                            if torch.cuda.is_available():
+                                torch.cuda.synchronize()
                 except Exception as e:
                     # Don't crash training if contrastive loss fails
                     if self.training:
@@ -491,11 +494,18 @@ class Enhanced_RRSIS_UOT(nn.Module):
             if pred_logits is not None:
                 scores = pred_logits.squeeze(-1)
                 best_idx = scores.argmax(dim=-1)
-                batch_idx = torch.arange(batch_size, device=pred_masks.device)
+                
+                # Shape guards and index clamping
+                actual_B = pred_masks.shape[0]
+                actual_Q = pred_masks.shape[1]
+                batch_idx = torch.arange(min(batch_size, actual_B), device=pred_masks.device)
+                best_idx = best_idx[:len(batch_idx)].clamp(0, actual_Q - 1)
+                
                 best_masks = pred_masks[batch_idx, best_idx]
                 best_masks = best_masks.unsqueeze(1)
             else:
                 best_masks = pred_masks[:, 0:1]
+
 
             best_masks = F.interpolate(
                 best_masks.float(),

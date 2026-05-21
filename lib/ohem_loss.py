@@ -319,13 +319,20 @@ class EnhancedOHEMLoss(nn.Module):
 
         if pred_logits.dim() == 3:
             scores = pred_logits.squeeze(-1)
+            B_pred = scores.shape[0]
             N = scores.shape[1]
+            
+            # Align batch sizes to prevent dimension mismatch on DDP / uneven batches
+            min_B = min(B, B_pred)
+            scores = scores[:min_B]
+            
             with torch.no_grad():
-                has_object = (gt_masks.sum(dim=(1, 2, 3)) > 0).float()
-                target_scores = has_object.unsqueeze(1).expand(B, N) / N
+                has_object = (gt_masks[:min_B].sum(dim=(1, 2, 3)) > 0).float()
+                target_scores = has_object.unsqueeze(1).expand(min_B, N) / N
             loss = F.binary_cross_entropy_with_logits(
                 scores, target_scores, reduction='mean'
             )
             return loss
 
         return torch.tensor(0.0, device=device)
+

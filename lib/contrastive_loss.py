@@ -118,10 +118,23 @@ class ContrastiveLoss(nn.Module):
             text_pooled = text_features  # Already (B, C)
 
         # Project to shared space
-        visual_emb = F.normalize(self.visual_proj(visual_pooled), dim=-1)  # (B, D)
-        text_emb = F.normalize(self.text_proj(text_pooled), dim=-1)  # (B, D)
+        visual_emb = F.normalize(self.visual_proj(visual_pooled), dim=-1)  # (B_vis, D)
+        text_emb = F.normalize(self.text_proj(text_pooled), dim=-1)  # (B_txt, D)
 
-        # If batch size is 1, contrastive loss is meaningless
+        # Batch size matching and slicing guards (extremely robust against DDP/uneven splits)
+        B_vis = visual_emb.shape[0]
+        B_txt = text_emb.shape[0]
+        if B_vis != B_txt:
+            min_B = min(B_vis, B_txt)
+            if min_B <= 1:
+                return torch.tensor(0.0, device=visual_features.device, requires_grad=True)
+            visual_emb = visual_emb[:min_B]
+            text_emb = text_emb[:min_B]
+            B = min_B
+        else:
+            B = B_vis
+
+        # If batch size is 1 or less, contrastive loss is meaningless
         if B <= 1:
             return torch.tensor(0.0, device=visual_features.device, requires_grad=True)
 
@@ -137,3 +150,4 @@ class ContrastiveLoss(nn.Module):
         loss_t2v = F.cross_entropy(logits.T, labels)  # Text → Visual
 
         return (loss_v2t + loss_t2v) / 2.0
+
